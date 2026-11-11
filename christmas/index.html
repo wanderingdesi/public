@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0b1a13">
 <meta name="description" content="Free family-friendly Christmas light displays in Sunnyvale and Santa Clara, with directions and a visited checklist.">
 <title>Holiday Lights | South Bay</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <style>
 :root{
   color-scheme:dark;
@@ -89,6 +90,30 @@ h2{font-size:clamp(1.6rem,3vw,2.1rem);letter-spacing:-.02em;margin:0}
 .table td:last-child{text-align:right}
 .past{margin:18px 0 0;padding-left:18px;color:#e6cfcf;font-size:.92rem}
 .past li{margin-bottom:6px}
+/* map */
+.map-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}
+#map{height:520px;border-radius:20px;border:1px solid var(--line);background:var(--pine);overflow:hidden}
+.map-fallback{display:grid;place-items:center;height:100%;padding:24px;text-align:center;color:var(--muted)}
+.map-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:520px;overflow:auto}
+.map-list button{width:100%;display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:center;text-align:left;background:var(--pine);border:1px solid var(--line);border-radius:12px;color:var(--cream);font:inherit;font-size:.9rem;padding:8px 10px;cursor:pointer}
+.map-list button:hover{border-color:var(--gold)}
+.map-list small{display:block;color:var(--muted);font-size:.78rem}
+.pin{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:850;font-size:.8rem;background:var(--red);color:#fff;border:2px solid var(--cream);box-shadow:0 2px 6px #0008}
+.pin.sc{background:var(--gold);color:#2a1a05}
+.pin.done{background:var(--mint);color:#0b1a13}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;font-size:.84rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:50%;border:2px solid var(--cream)}
+.leaflet-container{font:inherit}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--pine-2);color:var(--cream);border:1px solid var(--line)}
+.leaflet-popup-content{margin:12px 14px;font-size:.9rem;line-height:1.45}
+.leaflet-popup-content b{display:block;font-size:1rem}
+.leaflet-popup-content .pop-links{display:flex;gap:12px;margin-top:8px}
+.leaflet-popup-content a{color:var(--gold);font-weight:700}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+.leaflet-control-attribution{background:#0b1a13cc!important;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--gold)}
+.card{scroll-margin-top:16px}
 /* plan */
 .plans{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .plan{background:var(--pine);border:1px solid var(--line);border-radius:20px;padding:22px}
@@ -111,6 +136,8 @@ h2{font-size:clamp(1.6rem,3vw,2.1rem);letter-spacing:-.02em;margin:0}
 a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
 @media(max-width:1020px){
   .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .map-layout{grid-template-columns:1fr}
+  .map-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}
   .hero,.box,.refs{grid-template-columns:1fr}
 }
 @media(max-width:650px){
@@ -119,6 +146,8 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
   .hero{padding-top:6px;gap:24px}
   .box{padding:20px}
   .refs ul{columns:1}
+  #map{height:400px}
+  .map-list{grid-template-columns:1fr}
   .step{grid-template-columns:78px 1fr}
   .foot{grid-template-columns:1fr}
   header.top a{display:none}
@@ -134,10 +163,11 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
 <section class="hero">
   <div>
     <h1 class="serif">Twinkling streets, <em>right around the corner.</em></h1>
-    <p class="lead">A family-friendly evening guide to free Christmas light displays in Sunnyvale and Santa Clara. Synchronized shows, snowy front yards and glowing walking streets. No tickets needed.</p>
+    <p class="lead">A family-friendly evening guide to ten free Christmas light displays in Sunnyvale and Santa Clara: synchronized shows, snowy front yards, glowing walking streets and the city's award-winning homes. No tickets needed.</p>
     <div class="chips"><span>📍 Sunnyvale + Santa Clara</span><span>👧 Little-kid picks first</span><span>🆓 Free residential displays</span><span>📻 Tune to 101.9 FM</span></div>
     <div class="btns">
       <a class="btn" href="#houses">See the displays ↓</a>
+      <a class="btn ghost" href="#map-section">Open the map ↓</a>
       <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;origin=909+Arlington+Ct%2C+Sunnyvale%2C+CA+94087&amp;destination=955+Bluebonnet+Dr%2C+Sunnyvale%2C+CA+94086&amp;travelmode=driving">Suggested route ↗</a>
     </div>
   </div>
@@ -146,16 +176,27 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
     <h2 class="serif">Hours are from the 2025 season</h2>
     <p>2026 schedules aren't posted yet. Check each source link before heading out, especially in late November while displays are still going up.</p>
     <div class="small" style="font-weight:700;color:var(--cream)">Your stops tonight</div>
-    <div class="progress"><div class="bar"><i id="bar"></i></div><span class="count" id="count">0 of 5 visited</span></div>
+    <div class="progress"><div class="bar"><i id="bar"></i></div><span class="count" id="count">0 of 10 visited</span></div>
     <button class="reset" id="reset" type="button">Reset checklist</button>
   </aside>
 </section>
 
+<section class="section" id="map-section">
+  <div class="sec-head"><h2 class="serif">📍 All ten on one map</h2><p>Tap a pin for directions. Visited stops turn green.</p></div>
+  <div class="map-layout">
+    <div>
+      <div id="map" role="region" aria-label="Map of the ten holiday light displays"><div class="map-fallback">Loading map…</div></div>
+      <div class="legend"><span><i style="background:var(--red)"></i>Sunnyvale</span><span><i style="background:var(--gold)"></i>Santa Clara</span><span><i style="background:var(--mint)"></i>Visited</span></div>
+    </div>
+    <ol class="map-list" id="map-list" aria-label="Jump to a display"></ol>
+  </div>
+</section>
+
 <section class="section" id="houses">
-  <div class="sec-head"><h2 class="serif">✨ Five displays to see</h2><p>Tap “Mark visited” as you go. It stays saved on this phone.</p></div>
+  <div class="sec-head"><h2 class="serif">✨ Ten displays to see</h2><p>Tap “Mark visited” as you go. It stays saved on this phone.</p></div>
   <div class="grid">
 
-    <article class="card top" data-id="bluebonnet">
+    <article class="card top" data-id="bluebonnet" id="stop-bluebonnet" data-lat="37.36767" data-lng="-122.00920" data-city="sv">
       <div class="card-head"><div class="emoji">🎶</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
       <div class="number">01 · Top pick</div>
       <h3 class="serif">Bluebonnet Lights</h3>
@@ -166,7 +207,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
       <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=955+Bluebonnet+Dr%2C+Sunnyvale%2C+CA+94086">Get directions ↗</a><a target="_blank" rel="noopener" href="https://www.bluebonnetlights.com/">Display details ↗</a><a target="_blank" rel="noopener" href="https://www.facebook.com/BluebonnetLights/">Facebook updates ↗</a></div>
     </article>
 
-    <article class="card" data-id="arlington">
+    <article class="card" data-id="arlington" id="stop-arlington" data-lat="37.36964" data-lng="-122.04656" data-city="sv">
       <div class="card-head"><div class="emoji">☃️</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
       <div class="number">02 · Little-kid favorite</div>
       <h3 class="serif">Arlington Court Snowpeople</h3>
@@ -177,7 +218,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
       <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=909+Arlington+Ct%2C+Sunnyvale%2C+CA+94087">Get directions ↗</a><a target="_blank" rel="noopener" href="https://www.mercurynews.com/2025/11/24/holiday-lights-2025-most-amazing-bay-area-displays">Display details ↗</a></div>
     </article>
 
-    <article class="card" data-id="mckinley">
+    <article class="card" data-id="mckinley" id="stop-mckinley" data-lat="37.37233" data-lng="-122.02444" data-city="sv">
       <div class="card-head"><div class="emoji">🌟</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
       <div class="number">03 · Walking street</div>
       <h3 class="serif">Heritage District Holiday Arches</h3>
@@ -188,7 +229,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
       <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=E+McKinley+Ave+%26+S+Bayview+Ave%2C+Sunnyvale%2C+CA+94086">Get directions ↗</a><a target="_blank" rel="noopener" href="https://sites.google.com/view/www-heritagedistrict-org/home">Display details ↗</a><a target="_blank" rel="noopener" href="https://sites.google.com/view/www-heritagedistrict-org/faqs">Project FAQ ↗</a></div>
     </article>
 
-    <article class="card" data-id="capitola">
+    <article class="card" data-id="capitola" id="stop-capitola" data-lat="37.34298" data-lng="-121.98995" data-city="sc">
       <div class="card-head"><div class="emoji">📮</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
       <div class="number">04 · Citywide winner</div>
       <h3 class="serif">Capitola Way</h3>
@@ -199,15 +240,70 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
       <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=960+Capitola+Way%2C+Santa+Clara%2C+CA+95051">Get directions ↗</a><a target="_blank" rel="noopener" href="https://www.santaclaraca.gov/our-city/government/boards-commissions/cultural-commission/home-decorating-contests">Display details ↗</a><a target="_blank" rel="noopener" href="https://www.svvoice.com/2023-holiday-home-decorating-contest-features-santa-claras-brightest/">2023 winners ↗</a></div>
     </article>
 
-    <article class="card" data-id="river">
+    <article class="card" data-id="river" id="stop-river" data-lat="37.40001" data-lng="-121.95144" data-city="sc">
       <div class="card-head"><div class="emoji">🏘️</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
       <div class="number">05 · Park once, walk the row</div>
       <h3 class="serif">East River Parkway</h3>
       <span class="tag">Best group display</span>
       <p class="address">967–1021 E. River Pkwy, Santa Clara, CA 95054 (Rivermark)</p>
-      <p>Six neighboring homes (967, 975, 983, 991, 1001 &amp; 1021) won Best Group in 2025, and 1001 also took the District 1 award.</p>
+      <p>Six neighboring homes (967, 975, 983, 991, 1001 &amp; 1021) won Best Group in 2025, and 1001 also took the District 1 award, so this stop covers two winners.</p>
       <ul class="facts"><li><b>Hours &amp; dates:</b> not published. Check the city's live map.</li></ul>
       <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=1001+E+River+Pkwy%2C+Santa+Clara%2C+CA+95054">Get directions ↗</a><a target="_blank" rel="noopener" href="https://www.santaclaraca.gov/our-city/government/boards-commissions/cultural-commission/home-decorating-contests">Display details ↗</a></div>
+    </article>
+
+    <article class="card" data-id="cabrillo" id="stop-cabrillo" data-lat="37.35869" data-lng="-121.96167" data-city="sc">
+      <div class="card-head"><div class="emoji">🎁</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
+      <div class="number">06 · District winner</div>
+      <h3 class="serif">Cabrillo Avenue</h3>
+      <span class="tag">2025 District 2 winner</span>
+      <p class="address">2132 Cabrillo Ave, Santa Clara, CA 95050</p>
+      <p>Picked as the best-decorated home in Santa Clara's District 2 for 2025. The city didn't describe the decorations, so check the live map's photos for a preview.</p>
+      <ul class="facts"><li><b>Hours &amp; dates:</b> not published. Check the city's live map before you go.</li></ul>
+      <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=2132+Cabrillo+Ave%2C+Santa+Clara%2C+CA+95050">Get directions ↗</a><a target="_blank" rel="noopener" href="https://www.santaclaraca.gov/our-city/government/boards-commissions/cultural-commission/home-decorating-contests">Display details ↗</a></div>
+    </article>
+
+    <article class="card" data-id="santamaria" id="stop-santamaria" data-lat="37.36298" data-lng="-121.98151" data-city="sc">
+      <div class="card-head"><div class="emoji">🦌</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
+      <div class="number">07 · District winner</div>
+      <h3 class="serif">Santa Maria Avenue</h3>
+      <span class="tag">2025 District 3 winner</span>
+      <p class="address">3031 Santa Maria Ave, Santa Clara, CA 95051</p>
+      <p>District 3's top home in the 2025 contest, a short drive from Capitola Way. Easy to pair with Option B below.</p>
+      <ul class="facts"><li><b>Hours &amp; dates:</b> not published. Check the city's live map before you go.</li></ul>
+      <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=3031+Santa+Maria+Ave%2C+Santa+Clara%2C+CA+95051">Get directions ↗</a><a target="_blank" rel="noopener" href="https://www.santaclaraca.gov/our-city/government/boards-commissions/cultural-commission/home-decorating-contests">Display details ↗</a></div>
+    </article>
+
+    <article class="card" data-id="stevenson" id="stop-stevenson" data-lat="37.33483" data-lng="-121.97915" data-city="sc">
+      <div class="card-head"><div class="emoji">🔔</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
+      <div class="number">08 · District winner</div>
+      <h3 class="serif">Stevenson Street</h3>
+      <span class="tag">2025 District 4 winner</span>
+      <p class="address">2998 Stevenson St, Santa Clara, CA 95051 <span class="small">(map pin is approximate)</span></p>
+      <p>Santa Clara's District 4 winner for 2025. The city didn't describe the decorations, so check the live map before you go.</p>
+      <ul class="facts"><li><b>Hours &amp; dates:</b> not published. Check the city's live map before you go.</li></ul>
+      <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=2998+Stevenson+St%2C+Santa+Clara%2C+CA+95051">Get directions ↗</a><a target="_blank" rel="noopener" href="https://www.santaclaraca.gov/our-city/government/boards-commissions/cultural-commission/home-decorating-contests">Display details ↗</a></div>
+    </article>
+
+    <article class="card" data-id="washington" id="stop-washington" data-lat="37.34152" data-lng="-121.94009" data-city="sc">
+      <div class="card-head"><div class="emoji">🕯️</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
+      <div class="number">09 · District winner</div>
+      <h3 class="serif">Washington Street</h3>
+      <span class="tag">2025 District 5 winner</span>
+      <p class="address">214 Washington St, Santa Clara, CA 95050</p>
+      <p>District 5's 2025 winner, a few blocks from Santa Clara University.</p>
+      <ul class="facts"><li><b>Hours &amp; dates:</b> not published. Check the city's live map before you go.</li></ul>
+      <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=214+Washington+St%2C+Santa+Clara%2C+CA+95050">Get directions ↗</a><a target="_blank" rel="noopener" href="https://www.santaclaraca.gov/our-city/government/boards-commissions/cultural-commission/home-decorating-contests">Display details ↗</a></div>
+    </article>
+
+    <article class="card" data-id="belayre" id="stop-belayre" data-lat="37.32541" data-lng="-121.96089" data-city="sc">
+      <div class="card-head"><div class="emoji">⭐</div><button class="visit" type="button" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="lbl">Mark visited</span></button></div>
+      <div class="number">10 · District winner</div>
+      <h3 class="serif">Bel Ayre Drive</h3>
+      <span class="tag">2025 District 6 winner</span>
+      <p class="address">220 Bel Ayre Dr, Santa Clara, CA 95050</p>
+      <p>Santa Clara's District 6 winner for 2025. The city didn't describe the decorations, so check the live map's photos for a preview.</p>
+      <ul class="facts"><li><b>Hours &amp; dates:</b> not published. Check the city's live map before you go.</li></ul>
+      <div class="links"><a class="dir" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=220+Bel+Ayre+Dr%2C+Santa+Clara%2C+CA+95050">Get directions ↗</a><a target="_blank" rel="noopener" href="https://www.santaclaraca.gov/our-city/government/boards-commissions/cultural-commission/home-decorating-contests">Display details ↗</a></div>
     </article>
 
   </div>
@@ -217,29 +313,16 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
   <div class="box">
     <div>
       <h2 class="serif">🏡 More decorated homes in Santa Clara</h2>
-      <p>Santa Clara's Cultural Commission runs an annual Holiday Home Decorating Contest. Its page links to a <strong>live map of every entry</strong>, the best way to plan a drive. Winners are usually announced just before Christmas (Dec. 22 in 2025).</p>
+      <p>Santa Clara's Cultural Commission runs an annual Holiday Home Decorating Contest. Its page links to a <strong>live map of every entry</strong>, the best way to plan a drive. Winners are usually announced just before Christmas (Dec. 22 in 2025), and new entries appear on the map through December.</p>
       <a class="btn ghost" target="_blank" rel="noopener" href="https://www.santaclaraca.gov/our-city/government/boards-commissions/cultural-commission/home-decorating-contests">Open the city's contest map ↗</a>
-      <p class="small" style="margin-top:18px;color:#e6cfcf"><strong>Past winners</strong> (not confirmed for 2025, so check the live map):</p>
+      </div>
+    <div>
+      <p style="margin-top:0"><strong>Past winners</strong> (not confirmed for 2025, so check the live map):</p>
       <ul class="past">
         <li><strong>4292 Burdick Ln</strong> (Rivermark): district winner five years running through 2023. Look for Mickey &amp; Minnie, Scooby-Doo, Rudolph and the Grinch. <a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=4292+Burdick+Ln%2C+Santa+Clara%2C+CA">Directions ↗</a></li>
         <li><strong>875 Pepper Tree Ln</strong>: 2023 citywide winner. <a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=875+Pepper+Tree+Ln%2C+Santa+Clara%2C+CA">Directions ↗</a></li>
       </ul>
-    </div>
-    <div>
-      <table class="table">
-        <caption class="small" style="text-align:left;padding-bottom:8px;color:#e6cfcf">2025 contest winners</caption>
-        <thead><tr><th>Award</th><th>Address</th><th>Map</th></tr></thead>
-        <tbody>
-          <tr><td>District 1</td><td>1001 E. River Pkwy</td><td><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=1001+E+River+Pkwy%2C+Santa+Clara%2C+CA">Go ↗</a></td></tr>
-          <tr><td>District 2</td><td>2132 Cabrillo Ave</td><td><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=2132+Cabrillo+Ave%2C+Santa+Clara%2C+CA">Go ↗</a></td></tr>
-          <tr><td>District 3</td><td>3031 Santa Maria Ave</td><td><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=3031+Santa+Maria+Ave%2C+Santa+Clara%2C+CA">Go ↗</a></td></tr>
-          <tr><td>District 4</td><td>2998 Stevenson St</td><td><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=2998+Stevenson+St%2C+Santa+Clara%2C+CA">Go ↗</a></td></tr>
-          <tr><td>District 5</td><td>214 Washington St</td><td><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=214+Washington+St%2C+Santa+Clara%2C+CA">Go ↗</a></td></tr>
-          <tr><td>District 6</td><td>220 Bel Ayre Dr</td><td><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=220+Bel+Ayre+Dr%2C+Santa+Clara%2C+CA">Go ↗</a></td></tr>
-          <tr><td>Best of the Best</td><td>954 &amp; 960 Capitola Way</td><td><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=960+Capitola+Way%2C+Santa+Clara%2C+CA">Go ↗</a></td></tr>
-          <tr><td>Best Group</td><td>967–1021 E. River Pkwy</td><td><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=1001+E+River+Pkwy%2C+Santa+Clara%2C+CA+95054">Go ↗</a></td></tr>
-        </tbody>
-      </table>
+      <p class="small" style="color:#e6cfcf">All eight 2025 winners (six districts, Best of the Best and Best Group) are already in the ten cards above.</p>
     </div>
   </div>
 </section>
@@ -295,6 +378,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
 </footer>
 <div class="garland" aria-hidden="true"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 (function(){
   var KEY='sb-holiday-lights-2026-visited';
@@ -302,15 +386,59 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
   var state={};
   try{state=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){state={};}
   function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+
+  /* map */
+  var markers={},map=null,mapEl=document.getElementById('map'),list=document.getElementById('map-list');
+  function info(c,i){
+    return {id:c.dataset.id,n:i+1,lat:+c.dataset.lat,lng:+c.dataset.lng,sc:c.dataset.city==='sc',
+      title:c.querySelector('h3').textContent,addr:c.querySelector('.address').firstChild.textContent,
+      dir:c.querySelector('a.dir').href};
+  }
+  function pinIcon(d){
+    return L.divIcon({className:'',html:'<div class="pin'+(state[d.id]?' done':(d.sc?' sc':''))+'">'+d.n+'</div>',iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-14]});
+  }
+  function popup(d){
+    var w=document.createElement('div'),b=document.createElement('b'),a=document.createElement('span'),l=document.createElement('div');
+    b.textContent=d.n+'. '+d.title;a.textContent=d.addr;l.className='pop-links';
+    var g=document.createElement('a');g.href=d.dir;g.target='_blank';g.rel='noopener';g.textContent='Get directions ↗';
+    var j=document.createElement('a');j.href='#stop-'+d.id;j.textContent='Details ↓';
+    l.appendChild(g);l.appendChild(j);w.appendChild(b);w.appendChild(a);w.appendChild(l);return w;
+  }
+  var data=cards.map(info);
+  data.forEach(function(d){
+    var li=document.createElement('li'),bt=document.createElement('button');
+    bt.type='button';
+    bt.innerHTML='<span class="pin'+(d.sc?' sc':'')+'"></span><span><span class="t"></span><small></small></span>';
+    bt.querySelector('.pin').textContent=d.n;bt.querySelector('.t').textContent=d.title;bt.querySelector('small').textContent=d.sc?'Santa Clara':'Sunnyvale';
+    bt.addEventListener('click',function(){
+      if(map&&markers[d.id]){map.setView([d.lat,d.lng],15);markers[d.id].openPopup();mapEl.scrollIntoView({behavior:'smooth',block:'center'});}
+      else location.hash='stop-'+d.id;
+    });
+    li.appendChild(bt);list.appendChild(li);d.li=bt;
+  });
+  if(window.L){
+    try{
+      mapEl.innerHTML='';
+      map=L.map(mapEl,{scrollWheelZoom:false});
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+      data.forEach(function(d){markers[d.id]=L.marker([d.lat,d.lng],{icon:pinIcon(d),title:d.title,alt:d.n+'. '+d.title}).bindPopup(popup(d)).addTo(map);});
+      map.fitBounds(L.latLngBounds(data.map(function(d){return [d.lat,d.lng];})),{padding:[30,30]});
+    }catch(e){map=null;}
+  }
+  if(!map){mapEl.innerHTML='<div class="map-fallback">The map couldn\'t load. Use the list or each card\'s “Get directions” link instead.</div>';}
+
   function render(){
     var n=0;
-    cards.forEach(function(c){
+    cards.forEach(function(c,i){
       var on=!!state[c.dataset.id];if(on)n++;
       var b=c.querySelector('.visit');
       b.setAttribute('aria-pressed',on?'true':'false');
       b.querySelector('.ck').textContent=on?'✓':'';
       b.querySelector('.lbl').textContent=on?'Visited':'Mark visited';
       c.classList.toggle('done',on);
+      var d=data[i];
+      d.li.querySelector('.pin').className='pin'+(on?' done':(d.sc?' sc':''));
+      if(markers[d.id])markers[d.id].setIcon(pinIcon(d));
     });
     document.getElementById('count').textContent=n+' of '+cards.length+' visited';
     document.getElementById('bar').style.width=(cards.length?n/cards.length*100:0)+'%';
